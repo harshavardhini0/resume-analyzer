@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Resume Analyzer</title>
+
+    <style>
+        body {
+            font-family: Arial;
+            background: linear-gradient(135deg, #0f172a, #1e293b);
+            color: white;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            margin-top: 60px;
+        }
+
+        h1 {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+
+        p {
+            color: #cbd5f5;
+        }
+
+        input {
+            padding: 10px;
+            margin: 10px;
+        }
+
+        button {
+            padding: 12px 20px;
+            background: #38bdf8;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #0ea5e9;
+        }
+
+        .card {
+            background: #1e293b;
+            margin: 20px auto;
+            padding: 20px;
+            width: 60%;
+            border-radius: 12px;
+            box-shadow: 0px 0px 10px rgba(0,0,0,0.5);
+            text-align: left;
+        }
+
+        .skill {
+            display: inline-block;
+            background: #38bdf8;
+            color: black;
+            padding: 5px 10px;
+            border-radius: 6px;
+            margin: 5px;
+        }
+
+        .job {
+            margin: 10px 0;
+        }
+
+        .progress {
+            background: #334155;
+            border-radius: 10px;
+            overflow: hidden;
+            height: 10px;
+            margin-top: 5px;
+        }
+
+        .progress-bar {
+            height: 10px;
+            background: #22c55e;
+        }
+
+        .suggestion {
+            background: #facc15;
+            color: black;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 8px 0;
+        }
+
+        .score {
+            font-size: 24px;
+            font-weight: bold;
+            color: #22c55e;
+        }
+
+        .loading {
+            display: none;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+    <h1>🤖 AI Resume Analyzer</h1>
+    <p>Upload your resume and get instant insights</p>
+
+    <input type="file" id="file" accept=".pdf,.txt,.docx">
+    <br>
+    <button id="btn">Analyze Resume</button>
+
+    <div class="loading" id="loading">⏳ Analyzing...</div>
+
+    <div id="output"></div>
+</div>
+
+<script>
+document.getElementById("btn").addEventListener("click", function () {
+
+    let file = document.getElementById("file").files[0];
+
+    if (!file) {
+        alert("Please select a file first!");
+        return;
+    }
+
+    let formData = new FormData();
+    formData.append("resume", file);
+
+    document.getElementById("loading").style.display = "block";
+    document.getElementById("output").innerHTML = "";
+
+    fetch("http://127.0.0.1:5000/upload", {
+        method: "POST",
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        document.getElementById("loading").style.display = "none";
+
+        if (data.error) {
+            document.getElementById("output").innerHTML =
+                `<p style="color:red;">❌ ${data.error}</p>`;
+            return;
+        }
+
+        let output = "";
+
+        // 📊 Score
+        let score = data.skills.length * 10;
+        output += `
+        <div class="card">
+            <h2>📊 Resume Score</h2>
+            <p class="score">${score}/100</p>
+        </div>
+        `;
+
+        // 🧠 Skills
+        output += `<div class="card"><h2>🧠 Skills</h2>`;
+        data.skills.forEach(skill => {
+            output += `<span class="skill">${skill}</span>`;
+        });
+        output += `</div>`;
+
+        // 🎯 Jobs
+        output += `<div class="card"><h2>🎯 Job Matches</h2>`;
+        data.jobs.forEach(job => {
+            output += `
+            <div class="job">
+                <p>${job[0]} → ${job[1]}%</p>
+                <div class="progress">
+                    <div class="progress-bar" style="width:${job[1]}%"></div>
+                </div>
+            </div>
+            `;
+        });
+        output += `</div>`;
+
+        // 💡 Suggestions
+        output += `<div class="card"><h2>💡 Suggestions</h2>`;
+        data.suggestions.forEach(s => {
+            output += `<div class="suggestion">👉 ${s}</div>`;
+        });
+        output += `</div>`;
+
+        document.getElementById("output").innerHTML = output;
+    })
+    .catch(err => {
+        document.getElementById("loading").style.display = "none";
+        document.getElementById("output").innerHTML =
+            `<p style="color:red;">❌ Server Error</p>`;
+    });
+});
+</script>
+
+</body>
+</html>
